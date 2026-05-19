@@ -1,0 +1,19 @@
+{% extends "base.html" %} {% block title %}{{ page.title }} | {{ config.title
+}}{% endblock %} {% block content %}
+<article>
+    <header style="margin-bottom: 2rem">
+        <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem">
+            {{ page.title }}
+        </h1>
+        <div class="meta">
+            Published on {{ page.date | date(format="%B %d, %Y") }} {% if
+            page.taxonomies.tags %} • Tags: {% for tag in page.taxonomies.tags
+            %}
+            <span style="font-style: italic">#{{ tag }}</span>{% if not
+            loop.last %}, {% endif %} {% endfor %} {% endif %}
+        </div>
+    </header>
+
+    <div class="post-content">{{ page.content | safe }}</div>
+</article>
+{% endblock content %}

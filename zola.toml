@@ -1,16 +1,10 @@
-# The URL the site will be built for
 base_url = "https://marcoh.dev"
-
-# Whether to automatically compile all Sass files in the sass directory
-compile_sass = true
-
-# Whether to build a search index to be used later on by a JavaScript library
-build_search_index = false
-
-[markdown]
-
-[markdown.highlighting]
-theme = "catppuccin-mocha"
+title = "Marco Herrera-Rendon"
+description = "Software Engineer"
+default_language = "en"
 
 [extra]
-# Put all your custom variables here
+author = "Marco Herrera-Rendon"
+bio = "Writing about systems programming, engineering architecture, and minimalist design."
+github = "https://github.com/mherrerarendon"
+linkedin = "https://linkedin.com/in/marcoherrerarendon"
