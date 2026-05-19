@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .bg { fill: #222; }
+    .txt { fill: #fff; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #eee; }
+      .txt { fill: #121212; }
+    }
+  </style>
+  <rect class="bg" width="32" height="32" rx="6"/>
+  <text class="txt" x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="bold" font-size="14">MH</text>
+</svg>
