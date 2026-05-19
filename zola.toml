@@ -3,6 +3,13 @@ title = "Marco Herrera-Rendon"
 description = "Software Engineer"
 default_language = "en"
 
+[markdown]
+
+[markdown.highlighting]
+light_theme = "github-light"
+dark_theme = "github-dark"
+
+
 [extra]
 author = "Marco Herrera-Rendon"
 bio = "Writing about systems programming, engineering architecture, and minimalist design."
