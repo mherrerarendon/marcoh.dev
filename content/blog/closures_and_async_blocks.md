@@ -100,3 +100,6 @@ async fn async_block_fn(async_block: AsyncBlock) {
     drop(async_block.permit);
 }
 ```
+where every captured variable is actually just a field of our `AsyncBlock` struct.
+
+We may start to realize now why the compiler thinks it has a `&impl ObjectWriter` instead of a `impl ObjectWriter`
