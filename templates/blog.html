@@ -1,10 +1,22 @@
-{% extends "base.html" %} {% block content %}
-<h1 class="title">{{ section.title }}</h1>
-<ul>
-    <!-- If you are using pagination, section.pages will be empty.
-       You need to use the paginator object -->
-    {% for page in section.pages %}
-    <li><a href="{{ page.permalink | safe }}">{{ page.title }}</a></li>
-    {% endfor %}
-</ul>
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ section.title }}</h1>
+
+{% set current_year = "" %}
+{%- for page in section.pages %}
+    {% set page_year = page.date | date(format="%Y") %}
+    {% if page_year != current_year %}
+        {% if not loop.first %}</ul>{% endif %}
+        <h2 class="year-heading">{{ page_year }}</h2>
+        <ul class="post-list">
+        {% set_global current_year = page_year %}
+    {% endif %}
+    <li class="post-item">
+        <a href="{{ page.permalink | safe }}">{{ page.title }}</a>
+        <span class="post-date">{{ page.date | date(format="%b %d") }}</span>
+    </li>
+{%- endfor %}
+{% if section.pages %}</ul>{% endif %}
+
 {% endblock content %}
