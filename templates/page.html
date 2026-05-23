@@ -1,18 +1,45 @@
 {% extends "base.html" %} {% block title %}{{ page.title }} | {{ config.title
 }}{% endblock %} {% block content %}
 <article>
-    <header style="margin-bottom: 2rem">
-        <h1 style="font-size: 1.8rem; margin-bottom: 0.5rem">
-            {{ page.title }}
-        </h1>
+    <header class="post-header">
+        <h1>{{ page.title }}</h1>
         <div class="meta">
-            Published on {{ page.date | date(format="%B %d, %Y") }} {% if
-            page.taxonomies.tags %} • Tags: {% for tag in page.taxonomies.tags
+            {{ page.date | date(format="%B %d, %Y") }} {%- if
+            page.taxonomies.tags %} &middot; {% for tag in page.taxonomies.tags
             %}
-            <span style="font-style: italic">#{{ tag }}</span>{% if not
-            loop.last %}, {% endif %} {% endfor %} {% endif %}
+            <span class="tag">#{{ tag }}</span>{% if not loop.last %}, {% endif
+            %} {% endfor %} {% endif %}
         </div>
     </header>
+
+    {% if page.toc %}
+    <nav class="toc">
+        <h2 class="toc-title">Contents</h2>
+        <ul>
+            {% for h in page.toc %}
+            <li>
+                <a href="#{{ h.id }}">{{ h.title }}</a>
+                {% if h.children %}
+                <ul>
+                    {% for h2 in h.children %}
+                    <li>
+                        <a href="#{{ h2.id }}">{{ h2.title }}</a>
+                        {% if h2.children %}
+                        <ul>
+                            {% for h3 in h2.children %}
+                            <li><a href="#{{ h3.id }}">{{ h3.title }}</a></li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
 
     <div class="post-content">{{ page.content | safe }}</div>
 </article>
