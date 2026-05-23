@@ -229,6 +229,38 @@
                 color: var(--text);
             }
 
+            blockquote {
+                border-left: 3px solid var(--border);
+                margin-left: 0;
+                padding-left: 1.25rem;
+                color: var(--light-text);
+                font-style: italic;
+            }
+
+            .callout {
+                border-left: 3px solid var(--light-text);
+                border-radius: 0 6px 6px 0;
+                background: var(--code-bg);
+                padding: 0.9rem 1.25rem;
+                margin: 1.75rem 0;
+            }
+
+            .callout-tip  { border-left-color: #4caf50; }
+            .callout-warn { border-left-color: #f59e0b; }
+            .callout-info { border-left-color: #3b82f6; }
+
+            .callout-title {
+                font-size: 0.75rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin: 0 0 0.5rem 0;
+                color: var(--text);
+            }
+
+            .callout-body > p:first-child { margin-top: 0; }
+            .callout-body > p:last-child  { margin-bottom: 0; }
+
             footer {
                 margin-top: 4rem;
                 border-top: 1px solid var(--border);
@@ -236,6 +268,18 @@
                 font-size: 0.85rem;
                 color: var(--light-text);
             }
+
+            .callout {
+              padding: 1rem;
+              border-left: 4px solid;
+              margin: 1.5rem 0;
+              border-radius: 0 4px 4px 0;
+            }
+
+            .callout-note    { border-color: #4a9eff; background: #e8f4ff; }
+            .callout-tip     { border-color: #38a169; background: #e8f5ee; }
+            .callout-warning { border-color: #dd6b20; background: #fef3e8; }
+            .callout-caution { border-color: #e53e3e; background: #fde8e8; }
         </style>
     </head>
     <body>

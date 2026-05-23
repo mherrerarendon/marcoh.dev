@@ -1,0 +1,4 @@
+<div class="callout callout-{{ type | default(value="note") }}">
+  <p class="callout-title">{{ type | default(value="note") | title }}</p>
+  <div class="callout-body">{{ body | safe }}</div>
+</div>
