@@ -1,7 +1,7 @@
 +++
 title = "Closures and Async Blocks - Part One"
 date = 2026-05-23
-description = "A mental model around ownership when using closures and async blocks."
+description = "A mental model around ownership when using closures and async blocks in Rust."
 +++
 
 The purpose of this post is to come away with a mental model around ownership when using closures and async blocks. This mental model will help you understand why you need to use [`move`](https://doc.rust-lang.org/stable/std/keyword.move.html) in some circumstances, as well as gain a better understanding of compiler errors regarding closures and async blocks. This post is divided into two parts.
