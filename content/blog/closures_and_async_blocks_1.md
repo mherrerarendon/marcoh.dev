@@ -1,10 +1,10 @@
 +++
-title = "Closures and Async Blocks - Part One"
+title = "Captured Variables in Closures and Async Blocks - Part One"
 date = 2026-05-23
-description = "A mental model around ownership when using closures and async blocks in Rust."
+description = "A mental model around ownership of captured variables when using closures and async blocks in Rust."
 +++
 
-The purpose of this post is to come away with a mental model around ownership when using closures and async blocks. This mental model will help you understand why you need to use [`move`](https://doc.rust-lang.org/stable/std/keyword.move.html) in some circumstances, as well as gain a better understanding of compiler errors regarding closures and async blocks. This post is divided into two parts.
+The purpose of this post is to come away with a mental model around ownership of captured variables when using closures and async blocks. This mental model will help you understand why you need to use [`move`](https://doc.rust-lang.org/stable/std/keyword.move.html) in some circumstances, as well as gain a better understanding of compiler errors regarding closures and async blocks. This post is divided into two parts.
 
 ## Problem Statement
 Let's deep dive into this topic by implementing a somewhat common pattern. Consider a service like AWS S3 - S3 has a limitation that it can only process `X` simultaneous requests. In order to avoid S3 erroring out on the `X + 1` request, we'll implement a writer with backpressure, where the writer will concurrently execute up to `X` writes, but will wait to do the `X + 1` write until at least one pending write completes.
