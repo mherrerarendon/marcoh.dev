@@ -87,7 +87,7 @@ struct AsyncBlock<'a, 'b, 'c, 'd> {
 ```
 where all fields are references to the captured variables. This won't compile, but it's helpful to think of it this way for our mental model.
 
-Then, the async block implementation can be thought of as the following (the generic lifetimes are not important for our example so I removed them):
+Then, the async block implementation can be thought of as the following:
 ```rust
 async fn async_block_fn<...>(async_block: AsyncBlock<...>) {
     async_block
