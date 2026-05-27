@@ -1,7 +1,7 @@
 
 +++
 title = "Captured Variables in Closures and Async Blocks - Part Two"
-date = 2026-05-23
+date = 2026-05-27
 description = "A mental model around ownership of captured variables when using closures and async blocks in Rust."
 +++
 
