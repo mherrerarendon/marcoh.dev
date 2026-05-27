@@ -7,13 +7,13 @@ description = "A mental model around ownership of captured variables when using 
 The goal of this post is to develop a mental model around ownership of captured variables when using closures and async blocks. This mental model will help you understand when and why you need to use [`move`](https://doc.rust-lang.org/stable/std/keyword.move.html), as well as how to interpret compiler errors involving closures and async blocks. This post is divided into two parts.
 
 ## Problem Statement
-Let's dive deep into this topic by implementing a somewhat common pattern. Consider a service like AWS S3, which has a limitation on how many requests it can process simultaneously — let's call that limit `X`. To avoid errors on the `X + 1` request, we'll implement a writer with backpressure: the writer will concurrently execute up to `X` writes, but will wait before starting the `X + 1` write until at least one pending write completes.
+Let's dive into this topic by implementing a somewhat common pattern. Consider a service like AWS S3, which has a limitation on how many requests it can process simultaneously — let's call that limit `X`. To avoid errors on the `X + 1` request, we'll implement a writer with backpressure: the writer will concurrently execute up to `X` writes, but will wait before starting the `X + 1` write until at least one pending write completes.
 
 Assume that we have an S3 object that implements the following trait:
 ```rust
 #[async_trait]
 trait ObjectWriter {
-    async fn write_object(&self, path: impl AsRef<Path>, bytes: Bytes);
+    async fn write_object(&self, path: PathBuf, bytes: Bytes);
 }
 ```
 
@@ -28,12 +28,12 @@ async fn write_with_backpressure(
 ) {
     let permit = permits.acquire().await.unwrap();
     tokio::spawn(async {
-        object_writer.write_object(path, bytes).await;
+        object_writer.write_object(path.to_path_buf(), bytes).await;
         drop(permit);
     });
 }
 ```
-We're leveraging [`Semaphore`s](https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html), which are well-suited to our scenario. Before spawning the write task, we attempt to acquire a semaphore permit, which only yields once a permit is available. Then, in the spawned task, we explicitly drop the permit at the end to signal to the semaphore that a slot has freed up. We must reference `permit` inside the async block to ensure it is captured and moved in — without this, `permit` would be dropped in the outer scope immediately after the spawn, releasing the slot before the write completes. However, this approach has several issues, including compiler errors we'll address shortly.
+We're leveraging [`Semaphore`s](https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html), which are well-suited to our scenario. Before spawning the write task, we attempt to acquire a semaphore permit, which only yields once a permit is available. Then, in the spawned task, we explicitly drop the `permit` at the end to signal to the semaphore that a slot has freed up. We must reference `permit` inside the async block to ensure it is captured — without this, `permit` would be dropped in the outer scope immediately after the spawn, releasing the slot before the write completes. However, this implementation has several issues, including compiler errors we'll address shortly.
 
 ## Implementation Issues
 In addition to `path` and `bytes` (the two arguments unique to each invocation), the caller must also pass `object_writer` and `permits`. These instances never change across calls, so it's redundant to pass them on every invocation. We'll address this in [Part Two](@/blog/closures_and_async_blocks_2.md).
@@ -42,7 +42,7 @@ This code also fails to compile with the following errors:
 ```
 error[E0277]: `impl ObjectWriter` cannot be shared between threads safely
  13 | /     tokio::spawn(async {
- 14 | |         object_writer.write_object(path, bytes).await;
+ 14 | |         object_writer.write_object(path.to_path_buf(), bytes).await;
  15 | |         drop(permit);
  16 | |     });
     | |______^ `impl ObjectWriter` cannot be shared between threads safely
@@ -56,7 +56,7 @@ This requirement comes from [`tokio::spawn`](https://docs.rs/tokio/latest/tokio/
 ```rust
 Future + Send + 'static
 ```
-How do we make a reference to `impl ObjectWriter` implement [`Send`](https://doc.rust-lang.org/stable/std/marker/trait.Send.html)? Notice that the compiler refers to a _reference_ to `impl ObjectWriter`, even though we started with an owned `impl ObjectWriter`. Why?
+Notice that the compiler refers to a _reference_ to `impl ObjectWriter`, even though we started with an owned `impl ObjectWriter`. Why?
 
 This is where we can start building a mental model around ownership and closures and async blocks.
 
@@ -66,7 +66,7 @@ Closures and async blocks capture values by reference by default, unless the `mo
 For reference, here's our async block:
 ```rust
 async {
-    object_writer.write_object(path, bytes).await;
+    object_writer.write_object(path.to_path_buf(), bytes).await;
     drop(permit);
 }
 ```
@@ -97,7 +97,7 @@ async fn async_block_fn<...>(async_block: AsyncBlock<...>) {
     drop(async_block.permit);
 }
 ```
-In this view, every captured variable is a field of our `AsyncBlock` struct. When the async block is executed, the compiler passes a corresponding `AsyncBlock<...>` instance to `async_block_fn` to access those values. While this is not the actual compiled output, it gives us a clearer picture of how captured variables are used within the async block. Note that an async block [`Future`](https://doc.rust-lang.org/stable/std/future/trait.Future.html) can only be executed once, so in our mental model `AsyncBlock` is always passed by value.
+In this view, every captured variable is a field of our `AsyncBlock` struct. When the async block is executed, the compiler passes a corresponding `AsyncBlock<...>` instance to `async_block_fn` to access those captured values. While this is not the actual compiled output, it gives us a clearer picture of how captured variables are used within the async block. Note that an async block [`Future`](https://doc.rust-lang.org/stable/std/future/trait.Future.html) can only be executed once, so in our mental model `AsyncBlock` is always passed by value.
 
 This explains why the compiler sees a `&impl ObjectWriter` rather than an `impl ObjectWriter`: in our de-sugared view, `async_block.object_writer` is a field of type `&impl ObjectWriter`.
 
@@ -124,11 +124,15 @@ error[E0373]: async block may outlive the current function, but it borrows `obje
 What we actually need is for the async block to take ownership of the captured values. We can do that with the `move` keyword:
 ```rust
 pub async fn write_with_backpressure(
-    ...
+    object_writer: impl ObjectWriter,
+    permits: Arc<Semaphore>,
+    path: &Path,
+    bytes: Bytes,
 ) {
     let permit = permits.acquire().await.unwrap();
     tokio::spawn(async move {
-        ...
+        object_writer.write_object(path.to_path_buf(), bytes).await;
+        drop(permit);
     });
 }
 ```
@@ -138,7 +142,7 @@ error: future cannot be sent between threads safely
    ...
 note: captured value is not `Send`
     |
- 29 |         object_writer.write_object(path, bytes).await;
+ 29 |         object_writer.write_object(path.to_path_buf(), bytes).await;
     |         ^^^^^^^^^^^^^ has type `impl ObjectWriter` which is not `Send`
 note: required by a bound in `tokio::spawn`
 ```
@@ -188,7 +192,7 @@ pub async fn write_with_backpressure(
 ) {
     let permit = permits.acquire().await.unwrap();
     tokio::spawn(async move {
-        object_writer.write_object(path, bytes).await;
+        object_writer.write_object(path.to_path_buf(), bytes).await;
         drop(permit);
     });
 }
@@ -202,7 +206,7 @@ error[E0597]: `permits` does not live long enough
  34 |       let permit = permits.acquire().await.unwrap();
     |                    ^^^^^^^ borrowed value does not live long enough
  35 | /     tokio::spawn(async move {
- 36 | |         object_writer.write_object(path, bytes).await;
+ 36 | |         object_writer.write_object(path.to_path_buf(), bytes).await;
  37 | |         drop(permit);
  38 | |     });
     | |______- argument requires that `permits` is borrowed for `'static`

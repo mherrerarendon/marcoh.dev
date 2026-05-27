@@ -43,16 +43,16 @@ let writer_with_backpressure = create_writer_with_backpressure(object_writer, pe
 
 // Write multiple times (concurrently with backpressure) without needing to pass in either
 // the `object_writer` or the `permits`
-writer_with_backpressure("/my_bucket/first_object", Bytes::from_static(b"1234")).await;
-writer_with_backpressure("/my_bucket/second_object", Bytes::from_static(b"5678")).await;
+writer_with_backpressure("/my_bucket/first_object".into(), Bytes::from_static(b"1234")).await;
+writer_with_backpressure("/my_bucket/second_object".into(), Bytes::from_static(b"5678")).await;
 ```
 
-Our new function takes the context variables (`object_writer` and `permits`) and returns a function that takes as input the unique arguments needed for each write invocation (`PathBuf` and `Bytes`). We kept all argument types the same as in [Part One](@/blog/closures_and_async_blocks_1.md#remaining-implementation-issues) since we know those work, at least as a good starting point. We use [`AsyncFn`](https://doc.rust-lang.org/stable/std/ops/trait.AsyncFn.html) instead of [`Fn`](https://doc.rust-lang.org/stable/std/ops/trait.Fn.html) as the return type because we know we'll eventually need to `await` a permit, but the rest of the function signature is straightforward.
+Our new function takes the context variables (`object_writer` and `permits`) and returns a function that takes as input the unique arguments needed for each write invocation ([`PathBuf`](https://doc.rust-lang.org/stable/std/path/struct.PathBuf.html) and [`Bytes`](https://docs.rs/bytes/latest/bytes/struct.Bytes.html)). We kept all argument types the same as in [Part One](@/blog/closures_and_async_blocks_1.md#remaining-implementation-issues) since we know those work, at least as a good starting point. We use [`AsyncFn`](https://doc.rust-lang.org/stable/std/ops/trait.AsyncFn.html) instead of [`Fn`](https://doc.rust-lang.org/stable/std/ops/trait.Fn.html) as the return type because we know we'll eventually need to `await` a permit, but the rest of the function signature is straightforward.
 
 This approach is considerably more ergonomic than our first implementation. It makes code more readable by requiring fewer arguments, and more closely aligns with our ideal design.
 
 ## Ideal Implementation
-Next, let's implement our new function. For the most part, the body of our new function will be the same as the first implementation from [Part One](@/blog/closures_and_async_blocks_1.md#remaining-implementation-issues), except that we'll wrap it in a closure, which becomes the return value, like so:
+Next, let's implement our new function. For the most part, the body of our new function will be the same as the first implementation from [Part One](@/blog/closures_and_async_blocks_1.md#remaining-implementation-issues), except that we'll wrap it in a closure that takes a [`PathBuf`](https://doc.rust-lang.org/stable/std/path/struct.PathBuf.html) and [`Bytes`](https://docs.rs/bytes/latest/bytes/struct.Bytes.html), which becomes the return value, like so:
 ```rust
 pub fn create_writer_with_backpressure(
     object_writer: impl ObjectWriter + Send + 'static,
@@ -88,6 +88,9 @@ error[E0525]: expected a closure that implements the `AsyncFn` trait, but this c
 16 | |     }
    | |_____- return type was inferred to be `{closure@src/second.rs:10:5: 10:39}` here
 ```
+Let's break down this specific line:
+> closure is `AsyncFnOnce` because it moves the variable `permits` out of its environment
+
 As its name suggests, [`AsyncFnOnce`](https://doc.rust-lang.org/stable/std/ops/trait.AsyncFnOnce.html) can only be called once because it consumes itself when called. In other words, the compiler determines that `permits` is moved away on the first call, making it unavailable for any subsequent calls.
 
 ## Building on our Mental Model
@@ -111,7 +114,7 @@ In other words, `permits` is moved out of `Closure` even though we never explici
 > closure is `AsyncFnOnce` because `permits.acquire_owned()` in `AsyncBlock` moves `permits` from `Closure` into `AsyncBlock`.
 
 {% note(type="tip") %}
-The `move` keyword is not always necessary for a captured variable to be moved into the closure struct. The compiler will move it implicitly if the body of the closure require an owned instance.
+The `move` keyword is not always necessary for a captured variable to be moved into the closure struct. The compiler will move it implicitly if the body of the closure requires an owned instance.
 {% end %}
 
 We can illustrate this problem using our mental model. The de-sugared closure implementation would look like the following:
@@ -134,7 +137,7 @@ however, this approach would result in lifetime errors later.
 Async blocks should, in most cases, own the variables they capture. Because of the nature of asynchronous code, it is likely that an async block will outlive the scope in which the captured variables were defined, which Rust does not permit.
 {% end %}
 
-Instead, we can clone `permits` before moving it into `AsyncBlock`, like so:
+Instead, we can clone `permits` _before_ moving it into `AsyncBlock`, like so:
 ```rust
 pub fn create_writer_with_backpressure(
     object_writer: impl ObjectWriter + Send + 'static,
@@ -190,7 +193,10 @@ error[E0525]: expected a closure that implements the `AsyncFn` trait, but this c
 19 | |     }
    | |_____- return type was inferred to be `{closure@src/second.rs:10:5: 10:39}` here
 ```
-which is similar to the error we solved for `permits`. If we think of the captured variables of the spawned async block as:
+where the key line is:
+> closure is `AsyncFnOnce` because it moves the variable `object_writer` out of its environment
+
+This is similar to the error we solved for `permits`. If we think of the captured variables of the spawned async block as:
 ```rust
 struct SpawnedAsyncBlock {
     object_writer: impl ObjectWriter + Send + 'static,
