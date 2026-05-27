@@ -87,7 +87,7 @@ struct AsyncBlock<'a, 'b, 'c, 'd> {
 ```
 where all fields are references to the captured variables. This won't compile, but it's helpful to think of it this way for our mental model.
 
-Then, the async block implementation can be thought of as the following:
+Then, the async block implementation can be thought of as the contents of the async block wrapped in a function that takes an `AsyncBlock` instance:
 ```rust
 async fn async_block_fn<...>(async_block: AsyncBlock<...>) {
     async_block
@@ -97,9 +97,9 @@ async fn async_block_fn<...>(async_block: AsyncBlock<...>) {
     drop(async_block.permit);
 }
 ```
-where every captured variable is actually just a field of our `AsyncBlock` struct.
+In this view, every captured variable is just a field of our `AsyncBlock` struct. When it's time to execute our async block, the compiler will pass a corresponding `AsyncBlock<...>` instance to `async_block_fn` to access the captured variables. While `async_block_fn` isn't what's actually compiled, this de-sugared view gives us a clearer picture of how captured variables are used within the contents of the async block. Note that an async block [`Future`](https://doc.rust-lang.org/stable/std/future/trait.Future.html) can only be executed once, so in our mental model `AsyncBlock` would always be passed by value.
 
-Now we understand why the compiler thinks it has a `&impl ObjectWriter` instead of a `impl ObjectWriter`. If we use our mental model version of the async block contents, we can see that the compiler has access to `async_block.object_writer` which is a field of type `&impl ObjectWriter`.
+Now we understand why the compiler thinks it has a `&impl ObjectWriter` instead of a `impl ObjectWriter`. We can see that the compiler has access to `async_block.object_writer` which is a field of type `&impl ObjectWriter`.
 
 Back to the compiler error (skipping some of the error detail):
 ```

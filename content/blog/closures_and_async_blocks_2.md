@@ -5,10 +5,10 @@ date = 2026-05-23
 description = "A mental model around ownership of captured variables when using closures and async blocks in Rust."
 +++
 
-This is Part Two of the "Captured Variables Closures and Async Blocks" post, so make sure to check out [Part One](@/blog/closures_and_async_blocks_1.md) if you haven't already, as Part Two builds on Part One.
+This is Part Two of the "Captured Variables Closures and Async Blocks" post, so make sure to check out [Part One](@/blog/closures_and_async_blocks_1.md) if you haven't already, as Part Two builds on [Part One](@/blog/closures_and_async_blocks_1.md).
 
 ## Recap from Part One
-For reference, this is the implementation that we arrived at in Part One:
+For reference, this is the implementation that we arrived at in [Part One](@/blog/closures_and_async_blocks_1.md):
 ```rust
 pub async fn write_with_backpressure(
     object_writer: impl ObjectWriter + Send + 'static,
@@ -24,9 +24,9 @@ pub async fn write_with_backpressure(
 }
 ```
 
-As mentioned in Part One, our first implementation still has a problem - it requires two redundant arguments for every write invocation, `object_writer` and `permits`. These instances will never change, so our API should ideally not require these to be specified for every call. We can solve this by creating a structure that remembers the `object_writer` and `permits` context. This way, every call would only been to include as arguments what's unique for that particular invocation, the `path` where the data will be stored and the `bytes` that represent the data.
+As mentioned in [Part One](@/blog/closures_and_async_blocks_1.md), our first implementation still has a problem - it requires two redundant arguments for every write invocation, `object_writer` and `permits`. These instances will never change, so our API should ideally not require these to be specified for every call. We can solve this by creating a structure that remembers the `object_writer` and `permits` context. This way, every call would only been to include as arguments what's unique for that particular invocation, the `path` where the data will be stored and the `bytes` that represent the data.
 
-As we saw in Part One, closures/async blocks can be thought of as structures with fields that correspond to the captured variables. With this in mind, we can modify our implementation to first create a closure that captures the `object_writer` and `permits` as its context, and then use this closure whenever we need to write an object. 
+As we saw in [Part One](@/blog/closures_and_async_blocks_1.md), closures/async blocks can be thought of as structures with fields that correspond to the captured variables. With this in mind, we can modify our implementation to first create a closure that captures the `object_writer` and `permits` as its context, and then use this closure whenever we need to write an object. 
 
 ## Ideal API
 Let's start with our ideal function signature:
@@ -48,13 +48,13 @@ writer_with_backpressure("/my_bucket/first_object", Bytes::from_static(b"1234"))
 writer_with_backpressure("/my_bucket/second_object", Bytes::from_static(b"5678")).await;
 ```
 
-Our new function takes in the context variables (`object_writer` and `permits`), and returns a function that takes for its input the unique arguments needed for each write invocation (`PathBuf` and `Bytes`). We kept all function argument types the same as Part One since we know those will work, at least as a good starting point. We are using an [`AsyncFn`](https://doc.rust-lang.org/stable/std/ops/trait.AsyncFn.html) instead of an [`Fn`](https://doc.rust-lang.org/stable/std/ops/trait.Fn.html) for the return type of this new function because we know that we'll eventually need to `await` a permit, but the rest of the function signature is straight-forward.
+Our new function takes in the context variables (`object_writer` and `permits`), and returns a function that takes for its input the unique arguments needed for each write invocation (`PathBuf` and `Bytes`). We kept all function argument types the same as [Part One](@/blog/closures_and_async_blocks_1.md#remaining-implementation-issues) since we know those will work, at least as a good starting point. We are using an [`AsyncFn`](https://doc.rust-lang.org/stable/std/ops/trait.AsyncFn.html) instead of an [`Fn`](https://doc.rust-lang.org/stable/std/ops/trait.Fn.html) for the return type of this new function because we know that we'll eventually need to `await` a permit, but the rest of the function signature is straight-forward.
 
 This approach is a lot more ergonomic than our first implementation. It makes code more readable (by needing fewer arguments), and more closely
 aligns with our ideal design.
 
 ## Ideal Implementation
-Next, let's implement our new function. For the most part, the contents of our new function will be the same as our first implementation, except that we'll wrap our implementation in a closure, which is the return value for our new function, like so:
+Next, let's implement our new function. For the most part, the contents of our new function will be the same as our first implementation from [Part One](@/blog/closures_and_async_blocks_1.md#remaining-implementation-issues), except that we'll wrap our implementation in a closure, which is the return value for our new function, like so:
 ```rust
 pub fn create_writer_with_backpressure(
     object_writer: impl ObjectWriter + Send + 'static,
@@ -94,7 +94,7 @@ As its name suggests, [`AsyncFnOnce`](https://doc.rust-lang.org/stable/std/ops/t
 consumes itself when called. In other words, the compiler thinks `permits` is moved elsewhere as soon as the closure is called, making it unable to be called again.
 
 ## Building on our Mental Model
-Let's use our mental model to understand this compiler error. We can think of the captured variables for the returned closure as the following:
+Let's use our mental model we started building in [Part One](@/blog/closures_and_async_blocks_1.md) to understand this compiler error. We can think of the captured variables for the returned closure as the following:
 ```rust
 struct Closure {
     object_writer: impl ObjectWriter + Send + 'static,
@@ -117,7 +117,7 @@ In other words, `permits` is moved out of `Closure`, even though we never explic
 The `move` keyword is not always necessary for captured variables to be moved into the closure structure. The compiler can decide to move them if the contents of the closure require an owned instance.
 {% end %}
 
-We can illustrate this problem using our mental model too. The closure implementation would look like the following:
+We can illustrate this problem using our mental model too. The de-sugared closure implementation would look like the following:
 ```rust
 fn closure_fn(closure: Closure) -> AsyncBlock {
     AsyncBlock {
@@ -125,7 +125,7 @@ fn closure_fn(closure: Closure) -> AsyncBlock {
     }
 }
 ```
-where the `Closure` argument is required to be by value since `closure.permits` is moved into `AsyncBlock`. This means `closure_fn` can only be called once because `closure` gets dropped at the end of `closure_fn`.
+Remember from [Part One](@/blog/closures_and_async_blocks_1.md) that this view is helpful to get a clearer picture of how captured variables are used and moved in the contents of the closure. In this case, we can see that the `Closure` argument is required to be by value since `closure.permits` is moved into `AsyncBlock`. This means `closure_fn` can only be called once because `closure` gets dropped at the end of `closure_fn`.
 
 We could solve this by cloning `permits` before calling `acquire_owned`, like so:
 ```rust
@@ -144,7 +144,7 @@ pub fn create_writer_with_backpressure(
     permits: Arc<Semaphore>,
 ) -> impl AsyncFn(PathBuf, Bytes) {
     move |path: PathBuf, bytes: Bytes| {
-        let permits_clone = permits.clone();
+        let permits_clone = permits.clone(); // this line is new
         async move {
             let permit = permits_clone.acquire_owned().await.unwrap();
             tokio::spawn(async move {
@@ -194,7 +194,7 @@ error[E0525]: expected a closure that implements the `AsyncFn` trait, but this c
    | |_____- return type was inferred to be `{closure@src/second.rs:10:5: 10:39}` here
    ```
 which is a similar error as the one we solved for `permits`. 
-If we think of the captured variables by the spawned async block (which does use `move`) as:
+If we think of the captured variables by the spawned async block as:
 ```rust
 struct SpawnedAsyncBlock {
     object_writer: impl ObjectWriter + Send + 'static,
@@ -214,7 +214,7 @@ pub fn create_writer_with_backpressure(
 ) -> impl AsyncFn(PathBuf, Bytes) {
     move |path: PathBuf, bytes: Bytes| {
         let permits_clone = permits.clone();
-        let object_writer_clone = object_writer.clone();
+        let object_writer_clone = object_writer.clone(); // this line is new
         async move {
             let permit = permits_clone.acquire_owned().await.unwrap();
             tokio::spawn(async move {
@@ -228,7 +228,7 @@ pub fn create_writer_with_backpressure(
 Note that we also added a `Clone` bound to `object_writer`. Finally, no compiler errors!
 
 ## Recap
-Let's analyze why our implementation works using our mental model. We can think of the closure implementation as:
+Let's analyze why our implementation works by de-sugaring the closure and async blocks using our mental model. We can think of the closure implementation as:
 ```rust
 fn closure_fn(closure: &Closure) -> AsyncBlock {
     let permits_clone = closure.permits.clone();
@@ -238,10 +238,11 @@ fn closure_fn(closure: &Closure) -> AsyncBlock {
     }
 }
 ```
-and the async block implementation as:
+The closure generates a new `AsyncBlock` instance every time its called, which is why it needs to clone `permits` and `object_writer` and move these into `AsyncBlock`. Because we only use a reference to `Closure`, `closure_fn` can be called multiple times, which is a requirement for our API.
+
+Then, the `AsyncBlock` instance generated by the closure call gets passed by value into the following de-sugared async block implementation:
 ```rust
 fn async_block_fn(
-    closure: &Closure, 
     async_block: AsyncBlock,
 ) {
     let permit = async_block.permits_clone.acquire_owned().await.unwrap();
@@ -252,5 +253,20 @@ fn async_block_fn(
     )
 }
 ```
+As we saw in [Part One](@/blog/closures_and_async_blocks_1.md), async block [`Future`s](https://doc.rust-lang.org/stable/std/future/trait.Future.html) can only be used once (unlike a closure which can be called multiple times), which is why `AsyncBlock` is passed by value. This also allows us to move `async_block.object_writer_clone` into `SpawnedAsyncBlock` without needed to clone it again.
+
+Lastly, the `SpawnedAsyncBlock` instance gets passed by value into the following de-sugared implementation:
+```rust
+fn spawned_async_block_fn(spawned_async_block: SpawnedAsyncBlock) {
+    spawned_async_block
+        .object_writer_clone
+        .write_object(spawned_async_block.path, spawned_async_block.bytes)
+        .await;
+    drop(spawned_async_block.permit);
+}
+```
 Note that we are not including the arguments to the closure in our mental model since they are not relevant for the purpose of our post, but those are captured by `SpawnedAsyncBlock` too.
+
 Also note that `AsyncBlock` is passed by value into `async_block_fn`. This is required because we are moving `async_block.object_writer_clone` into `SpawnedAsyncBlock`. Because each call to the closure generates a new `AsyncBlock`, it's OK for it to be consumed. Only `Closure` needs to be used as a reference for our closure to implement `AsyncFn`.
+
+Thank you for reading this "Captured Variables in Closures and Async Blocks" blog post! I hope this will be helpful in your Rust development.
