@@ -111,7 +111,7 @@ In other words, `permits` is moved out of `Closure` even though we never explici
 > closure is `AsyncFnOnce` because `permits.acquire_owned()` in `AsyncBlock` moves `permits` from `Closure` into `AsyncBlock`.
 
 {% note(type="tip") %}
-The `move` keyword is not always necessary for a captured variable to be moved into the closure struct. The compiler will move it implicitly if the contents of the closure require an owned instance.
+The `move` keyword is not always necessary for a captured variable to be moved into the closure struct. The compiler will move it implicitly if the body of the closure require an owned instance.
 {% end %}
 
 We can illustrate this problem using our mental model. The de-sugared closure implementation would look like the following:
