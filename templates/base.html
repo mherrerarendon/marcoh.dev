@@ -6,6 +6,9 @@
         <title>{% block title %}{{ config.title }}{% endblock %}</title>
         <meta name="description" content="{{ config.description }}" />
         <link rel="icon" type="image/svg+xml" href="{{ get_url(path="favicon.svg") | safe }}">
+        {% block rss %}
+            <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ get_url(path="blog/rss.xml", trailing_slash=false) }}">
+        {% endblock %}
 
         <style>
             :root {
@@ -122,6 +125,30 @@
                 justify-content: space-between;
                 align-items: baseline;
                 margin-bottom: 0.75rem;
+            }
+
+            .section-header {
+                display: flex;
+                align-items: baseline;
+                gap: 0.75rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .section-header h1 {
+                margin-bottom: 0;
+            }
+
+            .feed-link {
+                color: var(--light-text);
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                flex-shrink: 0;
+                transition: color 0.2s ease;
+            }
+
+            .feed-link:hover {
+                color: #f26522;
             }
 
             .year-heading {
