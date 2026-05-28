@@ -4,11 +4,16 @@
     <header class="post-header">
         <h1>{{ page.title }}</h1>
         <div class="meta">
-            {{ page.date | date(format="%B %d, %Y") }} {%- if
-            page.taxonomies.tags %} &middot; {% for tag in page.taxonomies.tags
-            %}
-            <span class="tag">#{{ tag }}</span>{% if not loop.last %}, {% endif
-            %} {% endfor %} {% endif %}
+            {{ page.date | date(format="%B %d, %Y") }}
+            {%- if page.updated %}
+            &middot; Updated {{ page.updated | date(format="%B %d, %Y") }}
+            {%- endif %}
+            {%- if page.taxonomies.tags %}
+            &middot;
+            {%- for tag in page.taxonomies.tags %}
+            <span class="tag">#{{ tag }}</span>{% if not loop.last %}, {% endif %}
+            {%- endfor %}
+            {%- endif %}
         </div>
     </header>
 
