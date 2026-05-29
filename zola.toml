@@ -2,6 +2,7 @@ base_url = "https://marcoh.dev"
 title = "Marco Herrera-Rendon"
 description = "Software Engineer"
 default_language = "en"
+generate_feeds = true
 feed_filenames = ["rss.xml"]
 
 [markdown]
