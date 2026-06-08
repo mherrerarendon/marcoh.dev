@@ -34,6 +34,38 @@
         border-color: var(--text);
         text-decoration: none;
     }
+
+    .composition-notes {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.95rem;
+        color: var(--light-text);
+    }
+
+    .composition-instrumentation {
+        margin-bottom: 2rem;
+        font-size: 0.95rem;
+        color: var(--light-text);
+    }
+
+    .composition-instrumentation h2 {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--light-text);
+        margin: 0 0 0.6rem 0;
+    }
+
+    .composition-notes h2 {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--light-text);
+        margin: 0 0 0.6rem 0;
+    }
 </style>
 
 <article>
@@ -44,6 +76,11 @@
 
     {% if page.content %}
     <div class="post-content">{{ page.content | safe }}</div>
+    {% endif %} {% if page.extra.notes %}
+    <section class="composition-notes">
+        <h2>Notes</h2>
+        <p>{{ page.extra.notes }}</p>
+    </section>
     {% endif %} {% if page.extra.soundcloud_url %}
     <div class="soundcloud-embed">
         <iframe
@@ -64,6 +101,11 @@
         title="{{ page.title }} — score (PDF)"
     >
     </iframe>
+    {% endif %} {% if page.extra.instrumentation %}
+    <section class="composition-instrumentation">
+        <h2>Instrumentation</h2>
+        <p>{{ page.extra.instrumentation }}</p>
+    </section>
     {% endif %} {% if page.extra.musicxml_path %}
     <a
         href="{{ page.extra.musicxml_path | safe }}"
