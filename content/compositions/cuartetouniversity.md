@@ -1,6 +1,6 @@
 +++
 title = "Cuarteto de Cuerdas #1"
-date = 2010-11-01
+date = 2010-10-20
 
 [extra]
 soundcloud_url = "https://soundcloud.com/marco-herrera-rendon/cuarteto-university"
