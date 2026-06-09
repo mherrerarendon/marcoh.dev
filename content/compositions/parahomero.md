@@ -1,6 +1,6 @@
 +++
 title = "para Homero"
-date = 2009-12-01
+date = 2009-08-18
 
 [extra]
 soundcloud_url = "https://soundcloud.com/marco-herrera-rendon/para-homero"
