@@ -66,6 +66,46 @@
         color: var(--light-text);
         margin: 0 0 0.6rem 0;
     }
+
+    .composition-license {
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.85rem;
+        color: var(--light-text);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .license-badge {
+        display: inline-flex;
+        gap: 0.15rem;
+        align-items: center;
+        flex-shrink: 0;
+        text-decoration: none;
+    }
+
+    .license-icon {
+        height: 18px;
+        width: auto;
+        opacity: 0.6;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .license-icon {
+            filter: invert(1);
+        }
+    }
+
+    .composition-license a {
+        color: var(--light-text);
+    }
+
+    .composition-license a:hover {
+        color: var(--text);
+    }
 </style>
 
 <article>
@@ -131,6 +171,39 @@
         Download MusicXML
     </a>
     {% endif %}
+    <footer class="composition-license">
+        <a
+            href="https://creativecommons.org/licenses/by-sa/4.0/"
+            rel="license noopener"
+            target="_blank"
+            class="license-badge"
+            aria-label="Creative Commons Attribution-ShareAlike 4.0"
+        >
+            <img
+                src="https://mirrors.creativecommons.org/presskit/icons/cc.svg"
+                alt=""
+                class="license-icon"
+            />
+            <img
+                src="https://mirrors.creativecommons.org/presskit/icons/by.svg"
+                alt=""
+                class="license-icon"
+            />
+            <img
+                src="https://mirrors.creativecommons.org/presskit/icons/sa.svg"
+                alt=""
+                class="license-icon"
+            />
+        </a>
+        &copy; {{ page.date | date(format="%Y") }} {{ config.author |
+        default(value=config.title) }}. Licensed under
+        <a
+            href="https://creativecommons.org/licenses/by-sa/4.0/"
+            rel="license noopener"
+            target="_blank"
+            >CC BY-SA 4.0</a
+        >.
+    </footer>
 </article>
 
 {% endblock content %}
